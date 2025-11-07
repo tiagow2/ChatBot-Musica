@@ -1,0 +1,70 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# MyPy
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints
+
+# IDEs
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Local data and DBs
+Local AI Agent/local_agent_data/
+Local AI Agent/local_agent_data/*
+
+# SQLite DBs created by MCP / LocalAgent
+*.sqlite
+*.db
+
+# FAISS index
+*.index
+
+# Secrets / environment
+.env
+.env.*
+secrets/
+
+# Temporary files
+*~
+*.swp
+*.swo
+
+# Python bytecode
+**/__pycache__/

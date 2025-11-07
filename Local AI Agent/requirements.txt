@@ -2,3 +2,15 @@ lyricsgenius
 langchain-ollama
 langchain-core
 langchain
+sentence-transformers
+numpy
+# usando busca em sqlite (fallback) — evita problemas de instalação do faiss em Windows
+# Se quiser usar FAISS, instale faiss-cpu manualmente
+# faiss-cpu
+fastapi
+uvicorn[standard]
+pydantic
+pyTelegramBotAPI
+openai-whisper
+numpy
+requests
