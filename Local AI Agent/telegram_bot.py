@@ -42,10 +42,22 @@ except Exception:
 @bot.message_handler(func=lambda message: True)
 def reply_hi(message):
     try:
+        from ai_core import buscar_letra_genius, extrair_artista_musica
+        
         q = message.text or ""
-        # invoca o chain
-        resp = chain.invoke({"question": q})
-        bot.reply_to(message, str(resp))
+        artista, musica = extrair_artista_musica(q)
+        
+        letra = buscar_letra_genius(musica, artista)
+        
+        if not letra:
+            bot.reply_to(message, f"Desculpe, não encontrei a letra de '{q}'. Tente outro formato, como: 'Bohemian Rhapsody de Queen'")
+            return
+        
+        if len(letra) > 4000:
+            letra = letra[:4000] + "\n\n... (letra truncada - muito longa para o Telegram)"
+        
+        bot.reply_to(message, f"🎵 {musica.title()} - {artista.title() if artista else 'Artista desconhecido'}\n\n{letra}")
+    
     except Exception as e:
         bot.reply_to(message, f"Erro ao gerar resposta: {e}")
 
@@ -53,6 +65,8 @@ def reply_hi(message):
 @bot.message_handler(content_types=["voice"])
 def transcribe_voice_message(message):
     try:
+        from ai_core import buscar_letra_genius, extrair_artista_musica, safe_invoke
+        
         file_id = message.voice.file_id
         file_info = bot.get_file(file_id)
         file_path = file_info.file_path
@@ -87,7 +101,15 @@ def transcribe_voice_message(message):
         except Exception:
             pass
 
-        resp = chain.invoke({"question": text})
+        # busca a letra
+        artista, musica = extrair_artista_musica(text)
+        letra = buscar_letra_genius(musica, artista)
+        
+        if not letra:
+            bot.reply_to(message, f"Transcrição: '{text}'\n\nNão encontrei a letra. Tente reformular.")
+            return
+        
+        resp = safe_invoke({"question": text, "reviews": letra})
         bot.reply_to(message, str(resp))
     except Exception as e:
         bot.reply_to(message, f"Erro no processamento do áudio: {e}")
