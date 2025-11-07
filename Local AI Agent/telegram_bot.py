@@ -42,7 +42,8 @@ except Exception:
 @bot.message_handler(func=lambda message: True)
 def reply_hi(message):
     try:
-        from ai_core import buscar_letra_genius, extrair_artista_musica
+
+        from ai_core import buscar_letra_genius, extrair_artista_musica, safe_invoke_curiosidade
         
         q = message.text or ""
         artista, musica = extrair_artista_musica(q)
@@ -50,17 +51,19 @@ def reply_hi(message):
         letra = buscar_letra_genius(musica, artista)
         
         if not letra:
-            bot.reply_to(message, f"Desculpe, não encontrei a letra de '{q}'. Tente outro formato, como: 'Bohemian Rhapsody de Queen'")
+            bot.reply_to(message, f"Desculpe, não encontrei a letra de '{q}'.")
             return
+
+        curiosidade_msg = safe_invoke_curiosidade(musica, artista)
         
-        if len(letra) > 4000:
-            letra = letra[:4000] + "\n\n... (letra truncada - muito longa para o Telegram)"
+        if len(letra) > 3800: 
+            letra = letra[:3800] + "\n\n... (letra truncada)"
         
-        bot.reply_to(message, f"🎵 {musica.title()} - {artista.title() if artista else 'Artista desconhecido'}\n\n{letra}")
+        bot.reply_to(message, f"🎵 {musica.title()} - {artista.title() if artista else 'Artista desconhecido'}\n\n{letra}" \
+                                f"{curiosidade_msg}")
     
     except Exception as e:
         bot.reply_to(message, f"Erro ao gerar resposta: {e}")
-
 
 @bot.message_handler(content_types=["voice"])
 def transcribe_voice_message(message):
@@ -72,23 +75,21 @@ def transcribe_voice_message(message):
         file_path = file_info.file_path
         file_bytes = bot.download_file(file_path)
 
-        # salva o arquivo temporariamente
         suffix = os.path.splitext(file_path)[1] or ".ogg"
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
             f.write(file_bytes)
             tmp_path = f.name
 
         text = whisper_transcribe(tmp_path)
-        # remove o arquivo temporário
+
         try:
             os.remove(tmp_path)
         except Exception:
             pass
 
-        # postar no MCP se disponível
         doc_id = f"telegram-voice-{message.message_id}"
         try:
-                # re-checar disponibilidade rapidamente antes de postar
+
                 try:
                     if mcp_is_alive():
                         ok = mcp_add(doc_id, text, {"source": "telegram_voice", "user": message.from_user.id})
@@ -101,7 +102,6 @@ def transcribe_voice_message(message):
         except Exception:
             pass
 
-        # busca a letra
         artista, musica = extrair_artista_musica(text)
         letra = buscar_letra_genius(musica, artista)
         

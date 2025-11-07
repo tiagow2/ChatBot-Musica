@@ -5,6 +5,7 @@ from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 from local_agent import LocalAgent
 import httpx
+from langchain_core.prompts import PromptTemplate
 
 # Token Genius (mantenha seguro em variáveis de ambiente em produção)
 GENIUS_TOKEN = os.environ.get("GENIUS_TOKEN", "x5lnU50yJ34O0nmdOD9NszzrxXl8iz-d_9F8yr1JmSJ7z2MaglqCYwh7gztl1_pW")
@@ -94,3 +95,43 @@ def safe_invoke(payload: dict):
                 "e reinicie o terminal/sessão antes de rodar novamente."
             )
         return f"[ERRO] Falha ao gerar resposta: {msg}"
+
+MODELO_CURIOSIDADE = "phi3:mini"
+
+template_curiosidade = """
+Você é um especialista em música.
+Responda em português do Brasil com UMA única curiosidade ou fato interessante sobre a música "{musica}" do artista "{artista}".
+Seja direto e breve (máximo 2 frases). Se não souber, apenas diga que não encontrou fatos.
+
+Curiosidade:
+"""
+prompt_curiosidade = PromptTemplate.from_template(template_curiosidade)
+
+# 3. Crie o novo LLM e o novo Chain
+# (Podemos definir um timeout menor aqui, pois a tarefa é rápida)
+try:
+    llm_curiosidade = OllamaLLM(model=MODELO_CURIOSIDADE, request_timeout=30.0)
+    chain_curiosidade = prompt_curiosidade | llm_curiosidade
+except Exception as e:
+    print(f"AVISO: Não foi possível carregar o modelo de curiosidade ({MODELO_CURIOSIDADE}). {e}")
+    chain_curiosidade = None
+
+# 4. Crie uma nova função "safe_invoke" para a curiosidade
+def safe_invoke_curiosidade(musica, artista):
+    if not chain_curiosidade:
+        return "" # Retorna vazio se o modelo não carregou
+
+    try:
+        payload = {"musica": musica, "artista": artista}
+        resposta = chain_curiosidade.invoke(payload)
+        
+        # Limpa a resposta para evitar lixo
+        resposta = str(resposta).strip()
+        if not resposta or "não encontrei" in resposta.lower() or "não sei" in resposta.lower():
+            return ""
+            
+        return f"\n\n💡 **Curiosidade:**\n{resposta}"
+        
+    except Exception as e:
+        print(f"Erro ao gerar curiosidade: {e}")
+        return "" # Falha silenciosamente
